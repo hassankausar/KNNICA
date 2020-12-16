@@ -121,65 +121,69 @@ normalize(c(1, 2, 3, 4, 5))
 normalize(c(10, 20, 30, 40, 50))
 
 
-BreastCancer_Normalisation <-
-  as.data.frame(lapply(BreastCancer[2:10], normalize))
-head(BreastCancer_Normalisation)
+Normalised_BreastCancer <-
+  as.data.frame(lapply(BreastCancer[, 2:10], normalize))
 
+head(Normalised_BreastCancer)
 
-set.seed(207)
+set.seed(123)
 BreastCancer3 <-
   sample(
-    1:nrow(BreastCancer_Normalisation),
-    size = nrow(BreastCancer_Normalisation) * 0.7,
+    1:nrow(Normalised_BreastCancer),
+    size = nrow(Normalised_BreastCancer) * 0.7,
     replace = FALSE
   )
+train_BC <- Normalised_BreastCancer[BreastCancer3, ]
+test_BC <- Normalised_BreastCancer[-BreastCancer3, ]
 
 
-BC_Train <- BreastCancer_Normalisation[BreastCancer3,]
-BC_Test <- BreastCancer_Normalisation[-BreastCancer3,]
+train.BC_labels <- BreastCancer[BreastCancer3, 11]
+test.BC_labels <- BreastCancer[-BreastCancer3, 11]
 
 
-BC_Train_Labels <- BreastCancer[BreastCancer3, 11]
-BC_Test_Labels <- BreastCancer[-BreastCancer3, 11]
+NROW(train.BC_labels)
 
 
 BC_Test_Prediction <-
   knn(
-    train = BC_Train,
-    test = BC_Test,
-    cl = BC_Train_Labels,
+    train = train_BC,
+    test = test_BC,
+    cl = train.BC_labels,
     k = 21
   )
-
-CrossTable(x = BC_Test_Labels, y = BC_Test_Prediction, prop.chisq = FALSE)
-
-
-
-
-BreastCancer_Z <- as.data.frame(scale(BreastCancer[-11]))
-
-set.seed(295)
-
-BreastCancer4 <-
-  sample(1:nrow(BreastCancer_Z),
-         size = nrow(BreastCancer_Z) * 0.7,
-         replace = FALSE)
-
-
-BC_Train2 <- BreastCancer_Z[BreastCancer4,]
-BC_Test2 <- BreastCancer_Z[-BreastCancer4,]
-
-
-BC_Train_Labels2 <- BreastCancer[BreastCancer4, 11]
-BC_Test_Labels2 <- BreastCancer[-BreastCancer4, 11]
-
-
 BC_Test_Prediction2 <-
   knn(
-    train = BC_Train2,
-    test = BC_Test2,
-    cl = BC_Train_Labels2,
-    k = 21
+    train = train_BC,
+    test = test_BC,
+    cl = train.BC_labels,
+    k = 22
   )
 
-CrossTable(x = BC_Test_Labels2, y = BC_Test_Prediction2, prop.chisq = FALSE)
+BC_Test_Prediction_Accuracy <- 100 * sum(test.BC_labels == BC_Test_Prediction) / NROW(test.BC_labels)
+BC_Test_Prediction_Accuracy2 <- 100 * sum(test.BC_labels == BC_Test_Prediction2) / NROW(test.BC_labels)
+
+
+BC_Test_Prediction_Accuracy
+BC_Test_Prediction_Accuracy2
+
+table(BC_Test_Prediction , test.BC_labels)
+
+table(BC_Test_Prediction2 , test.BC_labels)
+
+confusionMatrix(table(BC_Test_Prediction , test.BC_labels))
+
+i = 1
+k.optm = 1
+for (i in 1:50) {
+  knn.mod <-
+    knn(
+      train = train_BC,
+      test = test_BC,
+      cl = train.BC_labels,
+      k = i
+    )
+  k.optm[i] <-
+    100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
+  k = i
+  cat(k, '=', k.optm[i], '')
+}
