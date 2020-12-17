@@ -1,7 +1,8 @@
 #--------------------------- PRE-PROCESSING THE DATA ---------------------------
 
-# Installing the packages required for pre-processing.
 
+
+# Installing the packages required for pre-processing and to work with the model later.
 install.packages("dplyr")
 install.packages("magrittr")
 install.packages("knitr")
@@ -14,6 +15,8 @@ install.packages("class")
 install.packages("gmodels")
 
 
+
+# Initialising the libraries.
 library(gmodels)
 library(dplyr)
 library(magrittr)
@@ -26,16 +29,21 @@ library(neuralnet)
 library(class)
 
 
-# Initialising the directory and using the data for pre-process
 
+# Initialising the directory and using the data for pre-process
 setwd("C:/Users/Hassan/Desktop/Machine Learning ICA work/KNNICA-Model/KNNICA")
+
+
+
+# Reading the file which contains the data.
 BreastCancer <-
   read.csv(file = "BreastCancerOriginal.data",
            stringsAsFactors = FALSE,
            header = TRUE)
 
-# Changing row names. Currently set from X1 to X5.
 
+
+# Changing variable names. Currently set from X1 to X5.
 BreastCancer <-
   rename(
     BreastCancer,
@@ -54,34 +62,48 @@ BreastCancer <-
     )
   )
 
+
+
 # Checking the data summary which includes the Mean, Mode and Median.
 summary(BreastCancer)
 
 
+
 # Deleting the rows that are not required due to we identified similar data to those.
 BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617),] %>% head()
-BreastCancer <-
-  BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617), ]
+BreastCancer <- BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617), ]
+
+
 
 # Replacing the missing data by its mode for the Bare Nuclei variable.
 # If the class is 4 the data will be replaced with 10.
 # If the class is 4 the data will be replaced with 1.
-
 class(BreastCancer$Bare_Nuclei)
 BreastCancer$Bare_Nuclei[BreastCancer$Bare_Nuclei == "?" &
                            BreastCancer$Class == "4"] <- "10"
+
+
 BreastCancer$Bare_Nuclei[BreastCancer$Bare_Nuclei == "?" &
                            BreastCancer$Class == "2"] <- "1"
 
+
+
+
+# Converting the Bare Nuclei variable to numeric as currently it was set as Character.
 BreastCancer$Bare_Nuclei <- as.numeric(BreastCancer$Bare_Nuclei)
+
+
+
+
+# Deleting the Bare Nuclei Variable.
 # BreastCancer$Bare_Nuclei <- NULL
 
 
-#USE EITHER THIS LINE TO REPLACE
-#BreastCancer$Class[BreastCancer$Class == "4"] <- "M"
-#BreastCancer$Class[BreastCancer$Class == "2"] <- "B"
 
-# OR USE THIS LINE TO REPLACE
+
+# Replacing the class variable data so it is better understandable.
+# BreastCancer$Class[BreastCancer$Class == "4"] <- "M"
+# BreastCancer$Class[BreastCancer$Class == "2"] <- "B"
 BreastCancer$Class <-
   factor(
     BreastCancer$Class,
@@ -89,22 +111,33 @@ BreastCancer$Class <-
     labels = c("Benign", "Malignant")
   )
 
-# BreastCancer$Class <- as.character.numeric_version(BreastCancer$Class)
-# BreastCancer$Bare_Nuclei <- as.integer(BreastCancer$Bare_Nuclei)
 
 
+
+
+#----------------------------- WORKING WITH KNN -----------------------------
+
+
+
+# Checking how many instances of each class there are (Benign and Malignant)
 table(BreastCancer$Class)
 
+
+
+
+# Checking the percentage of each class (Benign and Malignant)
 round(prop.table(table(BreastCancer$Class)) * 100, digits = 1)
 
 
 
+# Checking the summary again as there has been few  changes.
 summary(BreastCancer[c(
   "Clump_Thickness",
   "Uniformity_of_Cell_Size",
   "Uniformity_of_Cell_Shape",
   "Marginal_Adhesion",
   "Single_Epithelial_Cell_Size",
+  "Bare_Nuclei",
   "Bland_Chromatin",
   "Normal_Nucleoli",
   "Mitoses",
@@ -114,19 +147,39 @@ summary(BreastCancer[c(
 
 
 
+# In this function I will try to normalize the numeric data.
+# The normalize function takes a vector X of values that are numeric, and for each value in X, it will subtract the
+# minimum value and then divide by the range of values in X. 
+# At the end, the resulting vector is returned.
 normalize <- function (x) {
   return ((x - min(x)) / (max(x) - min(x)))
 }
+
+
+
+# Testing if the normalize method above is working.
+# The data normalised in the second vector are larger than the first one
+# After normalisation, they both become equal.
 normalize(c(1, 2, 3, 4, 5))
 normalize(c(10, 20, 30, 40, 50))
 
 
+
+# I have stored the normalised data in the ‘BreastCancer_Normalisation’ data frame
+# The ‘Patient_ID’ variable was not included because it is not required.
+# I also excluded the ‘Class’ variable as it is the variable I am trying to predict the accuracy for.
 BreastCancer_Normalisation <-
   as.data.frame(lapply(BreastCancer[2:10], normalize))
 head(BreastCancer_Normalisation)
 
 
+
+# The follwing set.seed() function will help to reuse the same set of random variables.
+# It might be required further in the ICA to evaluate particular task again with same random varibales.
 set.seed(207)
+
+
+
 BreastCancer3 <-
   sample(
     1:nrow(BreastCancer_Normalisation),
@@ -135,12 +188,15 @@ BreastCancer3 <-
   )
 
 
+
 BC_Train <- BreastCancer_Normalisation[BreastCancer3,]
 BC_Test <- BreastCancer_Normalisation[-BreastCancer3,]
 
 
+
 BC_Train_Labels <- BreastCancer[BreastCancer3, 11]
 BC_Test_Labels <- BreastCancer[-BreastCancer3, 11]
+
 
 
 BC_Test_Prediction <-
@@ -151,10 +207,13 @@ BC_Test_Prediction <-
     k = 21
   )
 
+
+
 CrossTable(x = BC_Test_Labels, y = BC_Test_Prediction, prop.chisq = FALSE)
 
 
 
+#----------------------------- WORKING WITH KNN-2 -----------------------------
 
 BreastCancer_Z <- as.data.frame(scale(BreastCancer[-11]))
 
