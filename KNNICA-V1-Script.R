@@ -31,11 +31,17 @@ library(class)
 
 
 # Initialising the directory and using the data for pre-process
+# WORKING WITH THIS DATA FROM HOME
 setwd("C:/Users/Hassan/Desktop/Machine Learning ICA work/KNNICA-Model/KNNICA")
 
 
 
-# Reading the file which contains the data.
+# WORKING WITH THIS DATA FROM UNI
+#setwd("U:/YEAR 3 COURSE WORK/ML ICA")
+
+
+
+# Reading the file which contains the data and loading it to the workspace.
 BreastCancer <-
   read.csv(file = "BreastCancerOriginal.data",
            stringsAsFactors = FALSE,
@@ -69,23 +75,23 @@ summary(BreastCancer)
 
 
 
-# Deleting the rows that are not required due to we identified similar data to those.
-BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617),] %>% head()
-BreastCancer <- BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617), ]
+# Deleting the rows that are not required due to I identified similar data to those.
+BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617), ] %>% head()
+BreastCancer <-
+  BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617),]
 
 
 
 # Replacing the missing data by its mode for the Bare Nuclei variable.
 # If the class is 4 the data will be replaced with 10.
-# If the class is 4 the data will be replaced with 1.
 class(BreastCancer$Bare_Nuclei)
 BreastCancer$Bare_Nuclei[BreastCancer$Bare_Nuclei == "?" &
                            BreastCancer$Class == "4"] <- "10"
 
 
+# If the class is 2 the data will be replaced with 1.
 BreastCancer$Bare_Nuclei[BreastCancer$Bare_Nuclei == "?" &
                            BreastCancer$Class == "2"] <- "1"
-
 
 
 
@@ -94,10 +100,8 @@ BreastCancer$Bare_Nuclei <- as.numeric(BreastCancer$Bare_Nuclei)
 
 
 
-
 # Deleting the Bare Nuclei Variable.
 # BreastCancer$Bare_Nuclei <- NULL
-
 
 
 
@@ -110,7 +114,6 @@ BreastCancer$Class <-
     levels = c("2", "4"),
     labels = c("Benign", "Malignant")
   )
-
 
 
 
@@ -149,7 +152,7 @@ summary(BreastCancer[c(
 
 # In this function I will try to normalize the numeric data.
 # The normalize function takes a vector X of values that are numeric, and for each value in X, it will subtract the
-# minimum value and then divide by the range of values in X. 
+# minimum value and then divide by the range of values in X.
 # At the end, the resulting vector is returned.
 normalize <- function (x) {
   return ((x - min(x)) / (max(x) - min(x)))
@@ -189,8 +192,8 @@ BreastCancer3 <-
 
 
 
-BC_Train <- BreastCancer_Normalisation[BreastCancer3,]
-BC_Test <- BreastCancer_Normalisation[-BreastCancer3,]
+BC_Train <- BreastCancer_Normalisation[BreastCancer3, ]
+BC_Test <- BreastCancer_Normalisation[-BreastCancer3, ]
 
 
 
@@ -200,12 +203,7 @@ BC_Test_Labels <- BreastCancer[-BreastCancer3, 11]
 
 
 BC_Test_Prediction <-
-  knn(
-    train = BC_Train,
-    test = BC_Test,
-    cl = BC_Train_Labels,
-    k = 21
-  )
+  knn(train = BC_Train, test = BC_Test, cl = BC_Train_Labels, k = 21)
 
 
 
@@ -219,14 +217,11 @@ BreastCancer_Z <- as.data.frame(scale(BreastCancer[-11]))
 
 set.seed(295)
 
-BreastCancer4 <-
-  sample(1:nrow(BreastCancer_Z),
-         size = nrow(BreastCancer_Z) * 0.7,
-         replace = FALSE)
+BreastCancer4 <- sample(1:nrow(BreastCancer_Z), size = nrow(BreastCancer_Z) * 0.7, replace = FALSE)
 
 
-BC_Train2 <- BreastCancer_Z[BreastCancer4,]
-BC_Test2 <- BreastCancer_Z[-BreastCancer4,]
+BC_Train2 <- BreastCancer_Z[BreastCancer4, ]
+BC_Test2 <- BreastCancer_Z[-BreastCancer4, ]
 
 
 BC_Train_Labels2 <- BreastCancer[BreastCancer4, 11]
@@ -234,11 +229,7 @@ BC_Test_Labels2 <- BreastCancer[-BreastCancer4, 11]
 
 
 BC_Test_Prediction2 <-
-  knn(
-    train = BC_Train2,
-    test = BC_Test2,
-    cl = BC_Train_Labels2,
-    k = 21
-  )
+  knn(train = BC_Train2, test = BC_Test2, cl = BC_Train_Labels2, k = 21)
 
 CrossTable(x = BC_Test_Labels2, y = BC_Test_Prediction2, prop.chisq = FALSE)
+plot(x = BC_Test_Labels2, y = BC_Test_Prediction2)

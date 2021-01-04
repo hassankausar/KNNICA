@@ -114,25 +114,22 @@ summary(BreastCancer[c(
 
 
 
-normalize <- function (x) {
-  return ((x - min(x)) / (max(x) - min(x)))
-}
+normalize <- function (x) {return ((x - min(x)) / (max(x) - min(x)))}
+
 normalize(c(1, 2, 3, 4, 5))
 normalize(c(10, 20, 30, 40, 50))
 
 
-Normalised_BreastCancer <-
-  as.data.frame(lapply(BreastCancer[, 2:10], normalize))
+Normalised_BreastCancer <- as.data.frame(lapply(BreastCancer[, 2:10], normalize))
 
 head(Normalised_BreastCancer)
 
 set.seed(123)
-BreastCancer3 <-
-  sample(
-    1:nrow(Normalised_BreastCancer),
+
+BreastCancer3 <- sample(1:nrow(Normalised_BreastCancer),
     size = nrow(Normalised_BreastCancer) * 0.7,
-    replace = FALSE
-  )
+    replace = FALSE)
+
 train_BC <- Normalised_BreastCancer[BreastCancer3, ]
 test_BC <- Normalised_BreastCancer[-BreastCancer3, ]
 
@@ -144,20 +141,8 @@ test.BC_labels <- BreastCancer[-BreastCancer3, 11]
 NROW(train.BC_labels)
 
 
-BC_Test_Prediction <-
-  knn(
-    train = train_BC,
-    test = test_BC,
-    cl = train.BC_labels,
-    k = 21
-  )
-BC_Test_Prediction2 <-
-  knn(
-    train = train_BC,
-    test = test_BC,
-    cl = train.BC_labels,
-    k = 22
-  )
+BC_Test_Prediction <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 21)
+BC_Test_Prediction2 <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 22)
 
 BC_Test_Prediction_Accuracy <- 100 * sum(test.BC_labels == BC_Test_Prediction) / NROW(test.BC_labels)
 BC_Test_Prediction_Accuracy2 <- 100 * sum(test.BC_labels == BC_Test_Prediction2) / NROW(test.BC_labels)
@@ -174,16 +159,11 @@ confusionMatrix(table(BC_Test_Prediction , test.BC_labels))
 
 i = 1
 k.optm = 1
+
 for (i in 1:50) {
-  knn.mod <-
-    knn(
-      train = train_BC,
-      test = test_BC,
-      cl = train.BC_labels,
-      k = i
-    )
-  k.optm[i] <-
-    100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
-  k = i
-  cat(k, '=', k.optm[i], '')
+  knn.mod <- knn(train = train_BC, test = test_BC, cl = train.BC_labels,k = i)
+  
+k.optm[i] <- 100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
+k = i
+cat(k, '=', k.optm[i], '')
 }
