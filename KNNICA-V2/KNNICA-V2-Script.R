@@ -1,7 +1,8 @@
 #--------------------------- PRE-PROCESSING THE DATA ---------------------------
 
-# Installing the packages required for pre-processing.
 
+
+# Installing the packages required for pre-processing and to work with the model later.
 install.packages("dplyr")
 install.packages("magrittr")
 install.packages("knitr")
@@ -12,8 +13,10 @@ install.packages("kernlab")
 install.packages("neuralnet")
 install.packages("class")
 install.packages("gmodels")
+install.packages("Metrics")
 
 
+# Initialising the libraries.
 library(gmodels)
 library(dplyr)
 library(magrittr)
@@ -24,18 +27,29 @@ library(e1071)
 library(kernlab)
 library(neuralnet)
 library(class)
+library('Metrics')
 
 
 # Initialising the directory and using the data for pre-process
-
+# WORKING WITH THIS DATA FROM HOME
 setwd("C:/Users/Hassan/Desktop/Machine Learning ICA work/KNNICA-Model/KNNICA")
+
+#setwd("C/:Users/V8039087/Desktop/MACHINE LEARNING FULL ICA WORK/KNNICA-master/KNNICA-master")
+
+# WORKING WITH THIS DATA FROM UNI
+#setwd("U:/YEAR 3 COURSE WORK/ML ICA")
+
+
+
+# Reading the file which contains the data and loading it to the workspace.
 BreastCancer <-
   read.csv(file = "BreastCancerOriginal.data",
            stringsAsFactors = FALSE,
            header = TRUE)
 
-# Changing row names. Currently set from X1 to X5.
 
+
+# Changing variable names. Currently set from X1 to X5.
 BreastCancer <-
   rename(
     BreastCancer,
@@ -54,34 +68,53 @@ BreastCancer <-
     )
   )
 
+
+
 # Checking the data summary which includes the Mean, Mode and Median.
 summary(BreastCancer)
 
+# Replacing to factor will help to get the mode.
+BreastCancer$Bare_Nuclei <- as.factor(BreastCancer$Bare_Nuclei)
 
-# Deleting the rows that are not required due to we identified similar data to those.
-BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617),] %>% head()
+# Checking the summary for BareNuclei variable where the class is 2 and 4.
+# This should give us the mode for both which later will be used to replace the data.
+summary (BreastCancer$Bare_Nuclei[BreastCancer$Class == "4"])
+summary (BreastCancer$Bare_Nuclei[BreastCancer$Class == "2"])
+
+
+
+# Deleting the rows that are not required due to I identified similar data to those.
+BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617), ] %>% head()
 BreastCancer <-
-  BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617), ]
+  BreastCancer[-c(139, 145, 158, 249, 275, 294, 321, 411, 617),]
+
 
 # Replacing the missing data by its mode for the Bare Nuclei variable.
 # If the class is 4 the data will be replaced with 10.
-# If the class is 4 the data will be replaced with 1.
-
 class(BreastCancer$Bare_Nuclei)
 BreastCancer$Bare_Nuclei[BreastCancer$Bare_Nuclei == "?" &
                            BreastCancer$Class == "4"] <- "10"
+
+
+# If the class is 2 the data will be replaced with 1.
 BreastCancer$Bare_Nuclei[BreastCancer$Bare_Nuclei == "?" &
                            BreastCancer$Class == "2"] <- "1"
 
+
+
+# Converting the Bare Nuclei variable to numeric as currently it was set as Character.
 BreastCancer$Bare_Nuclei <- as.numeric(BreastCancer$Bare_Nuclei)
+
+
+
+# Deleting the Bare Nuclei Variable.
 # BreastCancer$Bare_Nuclei <- NULL
 
 
-#USE EITHER THIS LINE TO REPLACE
-#BreastCancer$Class[BreastCancer$Class == "4"] <- "M"
-#BreastCancer$Class[BreastCancer$Class == "2"] <- "B"
 
-# OR USE THIS LINE TO REPLACE
+# Replacing the class variable data so it is better understandable.
+# BreastCancer$Class[BreastCancer$Class == "4"] <- "M"
+# BreastCancer$Class[BreastCancer$Class == "2"] <- "B"
 BreastCancer$Class <-
   factor(
     BreastCancer$Class,
@@ -89,8 +122,10 @@ BreastCancer$Class <-
     labels = c("Benign", "Malignant")
   )
 
-# BreastCancer$Class <- as.character.numeric_version(BreastCancer$Class)
-# BreastCancer$Bare_Nuclei <- as.integer(BreastCancer$Bare_Nuclei)
+
+
+
+#----------------------------- WORKING WITH KNN -----------------------------
 
 
 table(BreastCancer$Class)
@@ -124,11 +159,11 @@ Normalised_BreastCancer <- as.data.frame(lapply(BreastCancer[, 2:10], normalize)
 
 head(Normalised_BreastCancer)
 
-set.seed(123)
+set.seed(206)
 
 BreastCancer3 <- sample(1:nrow(Normalised_BreastCancer),
-    size = nrow(Normalised_BreastCancer) * 0.7,
-    replace = FALSE)
+                        size = nrow(Normalised_BreastCancer) * 0.7,
+                        replace = FALSE)
 
 train_BC <- Normalised_BreastCancer[BreastCancer3, ]
 test_BC <- Normalised_BreastCancer[-BreastCancer3, ]
@@ -152,8 +187,10 @@ BC_Test_Prediction_Accuracy
 BC_Test_Prediction_Accuracy2
 
 table(BC_Test_Prediction , test.BC_labels)
+Metrics::accuracy(test.BC_labels, BC_Test_Prediction)
 
 table(BC_Test_Prediction2 , test.BC_labels)
+Metrics::accuracy(test.BC_labels, BC_Test_Prediction2)
 
 confusionMatrix(table(BC_Test_Prediction , test.BC_labels))
 
@@ -163,7 +200,68 @@ k.optm = 1
 for (i in 1:50) {
   knn.mod <- knn(train = train_BC, test = test_BC, cl = train.BC_labels,k = i)
   
-k.optm[i] <- 100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
-k = i
-cat(k, '=', k.optm[i], '')
+  k.optm[i] <- 100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
+  k = i
+  cat(k, '=', k.optm[i], '')
+}
+
+
+
+
+
+#------------------------------------------------------------------------------
+  normalize <- function (x) {return ((x - min(x)) / (max(x) - min(x)))}
+
+normalize(c(1, 2, 3, 4, 5))
+normalize(c(10, 20, 30, 40, 50))
+
+
+Normalised_BreastCancer <- as.data.frame(lapply(BreastCancer[, 2:10], normalize))
+
+head(Normalised_BreastCancer)
+
+set.seed(206)
+
+BreastCancer3 <- sample(1:nrow(Normalised_BreastCancer),
+                        size = nrow(Normalised_BreastCancer) * 0.75,
+                        replace = FALSE)
+
+train_BC <- Normalised_BreastCancer[BreastCancer3, ]
+test_BC <- Normalised_BreastCancer[-BreastCancer3, ]
+
+
+train.BC_labels <- BreastCancer[BreastCancer3, 11]
+test.BC_labels <- BreastCancer[-BreastCancer3, 11]
+
+
+NROW(train.BC_labels)
+
+
+BC_Test_Prediction <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 21)
+BC_Test_Prediction2 <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 22)
+
+BC_Test_Prediction_Accuracy <- 100 * sum(test.BC_labels == BC_Test_Prediction) / NROW(test.BC_labels)
+BC_Test_Prediction_Accuracy2 <- 100 * sum(test.BC_labels == BC_Test_Prediction2) / NROW(test.BC_labels)
+
+
+BC_Test_Prediction_Accuracy
+BC_Test_Prediction_Accuracy2
+
+table(BC_Test_Prediction , test.BC_labels)
+Metrics::accuracy(test.BC_labels, BC_Test_Prediction)
+
+table(BC_Test_Prediction2 , test.BC_labels)
+Metrics::accuracy(test.BC_labels, BC_Test_Prediction2)
+
+confusionMatrix(table(BC_Test_Prediction , test.BC_labels))
+
+i = 1
+k.optm = 1
+
+for (i in 1:50) {
+  knn.mod <- knn(train = train_BC, test = test_BC, cl = train.BC_labels,k = i)
+  
+  k.optm[i] <- 100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
+  k = i
+  cat(k, '=', k.optm[i], '')
 }

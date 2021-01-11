@@ -13,7 +13,7 @@ install.packages("kernlab")
 install.packages("neuralnet")
 install.packages("class")
 install.packages("gmodels")
-
+install.packages("Metrics")
 
 
 # Initialising the libraries.
@@ -27,14 +27,14 @@ library(e1071)
 library(kernlab)
 library(neuralnet)
 library(class)
-
+library('Metrics')
 
 
 # Initialising the directory and using the data for pre-process
 # WORKING WITH THIS DATA FROM HOME
 setwd("C:/Users/Hassan/Desktop/Machine Learning ICA work/KNNICA-Model/KNNICA")
 
-
+#setwd("C/:Users/V8039087/Desktop/MACHINE LEARNING FULL ICA WORK/KNNICA-master/KNNICA-master")
 
 # WORKING WITH THIS DATA FROM UNI
 #setwd("U:/YEAR 3 COURSE WORK/ML ICA")
@@ -72,6 +72,14 @@ BreastCancer <-
 
 # Checking the data summary which includes the Mean, Mode and Median.
 summary(BreastCancer)
+
+# Replacing to factor will help to get the mode.
+BreastCancer$Bare_Nuclei <- as.factor(BreastCancer$Bare_Nuclei)
+
+# Checking the summary for BareNuclei variable where the class is 2 and 4.
+# This should give us the mode for both which later will be used to replace the data.
+summary (BreastCancer$Bare_Nuclei[BreastCancer$Class == "4"])
+summary (BreastCancer$Bare_Nuclei[BreastCancer$Class == "2"])
 
 
 
@@ -177,9 +185,9 @@ head(BreastCancer_Normalisation)
 
 
 
-# The follwing set.seed() function will help to reuse the same set of random variables.
+# The following set.seed() function will help to reuse the same set of random variables.
 # It might be required further in the ICA to evaluate particular task again with same random varibales.
-set.seed(207)
+set.seed(295)
 
 
 
@@ -210,12 +218,17 @@ BC_Test_Prediction <-
 CrossTable(x = BC_Test_Labels, y = BC_Test_Prediction, prop.chisq = FALSE)
 
 
+# compute classification accuracy for the logistic regression model
+# from sklearn import metrics
+
+Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction)
+
 
 #----------------------------- WORKING WITH KNN-2 -----------------------------
 
 BreastCancer_Z <- as.data.frame(scale(BreastCancer[-11]))
 
-set.seed(295)
+set.seed(206)
 
 BreastCancer4 <- sample(1:nrow(BreastCancer_Z), size = nrow(BreastCancer_Z) * 0.7, replace = FALSE)
 
@@ -229,7 +242,13 @@ BC_Test_Labels2 <- BreastCancer[-BreastCancer4, 11]
 
 
 BC_Test_Prediction2 <-
-  knn(train = BC_Train2, test = BC_Test2, cl = BC_Train_Labels2, k = 21)
+  knn(train = BC_Train2, test = BC_Test2, cl = BC_Train_Labels2, k = 23)
 
 CrossTable(x = BC_Test_Labels2, y = BC_Test_Prediction2, prop.chisq = FALSE)
 plot(x = BC_Test_Labels2, y = BC_Test_Prediction2)
+
+
+
+------------------------------------------------------------------------------
+Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction)
+Metrics::accuracy(BC_Test_Labels2, BC_Test_Prediction2)
