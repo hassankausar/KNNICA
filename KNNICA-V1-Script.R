@@ -229,6 +229,18 @@ CrossTable(x = BC_Test_Labels, y = BC_Test_Prediction, prop.chisq = FALSE)
 Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction)
 
 
+confusionMatrix(table(BC_Test_Prediction , BC_Test_Labels))
+
+
+
+
+
+
+
+
+
+
+
 #------------ IMPROVING MODEL PERFOMANCE USING Z-Score Standardisation----------
 
 # To improve the model we are following the same steps used before but this time using the Z-Score Standardisation.
@@ -272,33 +284,3 @@ CrossTable(x = BC_Test_LabelsZ, y = BC_Test_PredictionZ, prop.chisq = FALSE)
 # Display the accuracies for both version that I have worked with.
 Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction)
 Metrics::accuracy(BC_Test_LabelsZ, BC_Test_PredictionZ)
-
-
-
-
-
-
-# Improve the performance of model.
-
-# This is the fastest way of checking whether our accuracy worked above is the best or not.
-# The following function will take a loop of K values from 1 to 35(IT CAN GO FURTHER)and it will check which one gives me the best accuracy rate for this dataset.
-# The tuning parameters are ‘k’ value and number of ’features/attributes selection.
-# Optimum ‘k’ value can be found using ‘elbow’ or ‘maximum % accuracy’ graph 
-# but ‘feature selection’ can be done only through understanding of features in kNN algorithm.
-# declaration to initiate for loop
-i = 1
-k.optmV1 = 1
-
-for (i in 1:35) {
-  knn.modV1 <- knn(train = BC_TrainZ, test = BC_TestZ, cl = BC_Train_LabelsZ,k = i)
-  
-  k.optmV1[i] <- 100 * sum(BC_Test_LabelsZ == knn.modV1) / NROW(BC_Test_LabelsZ)
-  k = i
-  # to print the accuracy 
-  cat(k, '=', k.optmV1[i], '\n')
-}
-
-# to plot % accuracy that we created using the above function.
-# The lowest accuracy seems to be for K=1.
-# At k=7, maximum accuracy achieved which is 97.58%, after that, it seems to be stable for K7 to K26 but after it reduces success rate. 
-plot(k.optmV1, type="b", xlab="K- Value",ylab="Accuracy level")  
