@@ -128,24 +128,143 @@ BreastCancer$Class <-
 #----------------------------- WORKING WITH KNN -----------------------------
 
 
+
+# Checking how many instances of each class there are (Benign and Malignant)
 table(BreastCancer$Class)
 
+
+
+
+# Checking the percentage of each class (Benign and Malignant)
 round(prop.table(table(BreastCancer$Class)) * 100, digits = 1)
 
 
 
+# Checking the summary again as there has been few  changes.
 summary(BreastCancer[c(
   "Clump_Thickness",
   "Uniformity_of_Cell_Size",
   "Uniformity_of_Cell_Shape",
   "Marginal_Adhesion",
   "Single_Epithelial_Cell_Size",
+  "Bare_Nuclei",
   "Bland_Chromatin",
   "Normal_Nucleoli",
   "Mitoses",
   "Class"
 )])
 
+
+
+
+# In this function I will try to normalize the numeric data.
+# The normalize function takes a vector X of values that are numeric, and for each value in X, it will subtract the
+# minimum value and then divide by the range of values in X.
+# At the end, the resulting vector is returned.
+normalize <- function (x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+
+
+# Testing if the normalize method above is working.
+# The data normalised in the second vector are larger than the first one
+# After normalisation, they both become equal.
+normalize(c(1, 2, 3, 4, 5))
+normalize(c(10, 20, 30, 40, 50))
+
+
+
+# I have stored the normalised data in the ‘BreastCancer_Normalisation’ data frame
+# The ‘Patient_ID’ variable was not included because it is not required.
+# I also excluded the ‘Class’ variable as it is the variable I am trying to predict the accuracy for.
+BreastCancer_Normalisation <-
+  as.data.frame(lapply(BreastCancer[2:10], normalize))
+head(BreastCancer_Normalisation)
+
+
+
+# The following set.seed() function will help to reuse the same set of random variables.
+# It might be required further in the ICA to evaluate particular task again with same random varibales.
+set.seed(295)
+
+# The sample function takes the normalised data that I created above where the class variable was taken off and it distributes into 70/30 proportion.
+BreastCancerKNN <-
+  sample(
+    1:nrow(BreastCancer_Normalisation),
+    size = nrow(BreastCancer_Normalisation) * 0.7,
+    replace = FALSE
+  )
+
+# The BC_Train is using 70% of data specified above in the BreastCancerKNN data we created.
+BC_Train <- BreastCancer_Normalisation[BreastCancerKNN, ]
+# The BC_Test is using the remaining data which should be 30% specified above in the BreastCancerKNN data we created.
+BC_Test <- BreastCancer_Normalisation[-BreastCancerKNN, ]
+
+
+# When I create the training and test data, I excluded the target variable which is the CLASS variable.
+# The labels I am creating below are stored in a separate factor vectors.
+# 11 stands for the 11th variable which was the Class.
+# The training labels are training for the Class variable.
+BC_Train_Labels <- BreastCancer[BreastCancerKNN, 11]
+# The testing labels are training for the Class variable.
+BC_Test_Labels <- BreastCancer[-BreastCancerKNN, 11]
+
+
+# Checking how many rows there are being trained
+NROW(BC_Train_Labels)
+
+# The KNN function is used to classify the data and it returns a factor vector of predicated labels.
+# I used 21 as it is the close to the square root of our training data but also used 22 to check differnt responses.
+# We are training the BC_Train data which was the 70% when I splitted.
+# We are testing the BC_Test data which was the 30% when I splitted.
+BC_Test_Prediction <- knn(train = BC_Train, test = BC_Test, cl = BC_Train_Labels, k = 21)
+BC_Test_Prediction2 <- knn(train = BC_Train, test = BC_Test, cl = BC_Train_Labels, k = 22)
+
+# This function is calculating the accuracy based on our prediction and labels.
+BC_Test_Prediction_Accuracy <- 100 * sum(BC_Test_Labels == BC_Test_Prediction) / NROW(BC_Test_Labels)
+# This function is calculating the accuracy based on our prediction and labels.
+BC_Test_Prediction_Accuracy2 <- 100 * sum(BC_Test_Labels == BC_Test_Prediction2) / NROW(BC_Test_Labels)
+
+# Displaying the accuracies that were created above.
+BC_Test_Prediction_Accuracy
+BC_Test_Prediction_Accuracy2
+
+# Similar to Confusion Matrix and CrossTable. It shows the TP, TN, FP, FN.
+table(BC_Test_Prediction , BC_Test_Labels)
+# The following line was used to get the overall accuracy for this model. It is a way to test that our previous function were working or not.
+Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction)
+
+# Similar to Confusion Matrix and CrossTable. It shows the TP, TN, FP, FN.
+table(BC_Test_Prediction2 , BC_Test_Labels)
+# The following line was used to get the overall accuracy for this model. It is a way to test that our previous function were working or not.
+Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction2)
+
+# Using Confusion Matix now to display everything from accuracy to Kappa, Sensitivity...etc.
+confusionMatrix(table(BC_Test_Prediction , BC_Test_Labels))
+# Using Confusion Matix now to display everything from accuracy to Kappa, Sensitivity...etc.
+confusionMatrix(table(BC_Test_Prediction2 , BC_Test_Labels))
+
+# THE ONE WITH K=21 GIVES US BETTER RESULT.
+
+
+i = 1
+k.optm = 1
+
+for (i in 1:50) {
+  knn.mod <- knn(train = BC_Train, test = BC_Test, cl = BC_Train_Labels,k = i)
+  
+  k.optm[i] <- 100 * sum(BC_Test_Labels == knn.mod) / NROW(BC_Test_Labels)
+  k = i
+  cat(k, '=', k.optm[i], '')
+}
+
+
+
+
+
+#-------------------------------------------------------------------------------
+#------------ IMPROVING MODEL PERFOMANCE BY USING 75% data for training---------
 
 
 
@@ -162,71 +281,10 @@ head(Normalised_BreastCancer)
 set.seed(206)
 
 BreastCancer3 <- sample(1:nrow(Normalised_BreastCancer),
-                        size = nrow(Normalised_BreastCancer) * 0.7,
-                        replace = FALSE)
-
-train_BC <- Normalised_BreastCancer[BreastCancer3, ]
-test_BC <- Normalised_BreastCancer[-BreastCancer3, ]
-
-
-train.BC_labels <- BreastCancer[BreastCancer3, 11]
-test.BC_labels <- BreastCancer[-BreastCancer3, 11]
-
-
-NROW(train.BC_labels)
-
-
-BC_Test_Prediction <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 21)
-BC_Test_Prediction2 <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 22)
-
-BC_Test_Prediction_Accuracy <- 100 * sum(test.BC_labels == BC_Test_Prediction) / NROW(test.BC_labels)
-BC_Test_Prediction_Accuracy2 <- 100 * sum(test.BC_labels == BC_Test_Prediction2) / NROW(test.BC_labels)
-
-
-BC_Test_Prediction_Accuracy
-BC_Test_Prediction_Accuracy2
-
-table(BC_Test_Prediction , test.BC_labels)
-Metrics::accuracy(test.BC_labels, BC_Test_Prediction)
-
-table(BC_Test_Prediction2 , test.BC_labels)
-Metrics::accuracy(test.BC_labels, BC_Test_Prediction2)
-
-confusionMatrix(table(BC_Test_Prediction , test.BC_labels))
-
-i = 1
-k.optm = 1
-
-for (i in 1:50) {
-  knn.mod <- knn(train = train_BC, test = test_BC, cl = train.BC_labels,k = i)
-  
-  k.optm[i] <- 100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
-  k = i
-  cat(k, '=', k.optm[i], '')
-}
-
-
-
-
-
-#------------------------------------------------------------------------------
-  normalize <- function (x) {return ((x - min(x)) / (max(x) - min(x)))}
-
-normalize(c(1, 2, 3, 4, 5))
-normalize(c(10, 20, 30, 40, 50))
-
-
-Normalised_BreastCancer <- as.data.frame(lapply(BreastCancer[, 2:10], normalize))
-
-head(Normalised_BreastCancer)
-
-set.seed(206)
-
-BreastCancer3 <- sample(1:nrow(Normalised_BreastCancer),
                         size = nrow(Normalised_BreastCancer) * 0.75,
                         replace = FALSE)
 
-train_BC <- Normalised_BreastCancer[BreastCancer3, ]
+BC_Train <- Normalised_BreastCancer[BreastCancer3, ]
 test_BC <- Normalised_BreastCancer[-BreastCancer3, ]
 
 
@@ -237,8 +295,8 @@ test.BC_labels <- BreastCancer[-BreastCancer3, 11]
 NROW(train.BC_labels)
 
 
-BC_Test_Prediction <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 21)
-BC_Test_Prediction2 <- knn(train = train_BC, test = test_BC, cl = train.BC_labels, k = 22)
+BC_Test_Prediction <- knn(train = BC_Train, test = test_BC, cl = train.BC_labels, k = 21)
+BC_Test_Prediction2 <- knn(train = BC_Train, test = test_BC, cl = train.BC_labels, k = 22)
 
 BC_Test_Prediction_Accuracy <- 100 * sum(test.BC_labels == BC_Test_Prediction) / NROW(test.BC_labels)
 BC_Test_Prediction_Accuracy2 <- 100 * sum(test.BC_labels == BC_Test_Prediction2) / NROW(test.BC_labels)
@@ -259,7 +317,7 @@ i = 1
 k.optm = 1
 
 for (i in 1:50) {
-  knn.mod <- knn(train = train_BC, test = test_BC, cl = train.BC_labels,k = i)
+  knn.mod <- knn(train = BC_Train, test = test_BC, cl = train.BC_labels,k = i)
   
   k.optm[i] <- 100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
   k = i
