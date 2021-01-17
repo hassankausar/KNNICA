@@ -14,6 +14,7 @@ install.packages("neuralnet")
 install.packages("class")
 install.packages("gmodels")
 install.packages("Metrics")
+install.packages("tidyverse")
 
 
 # Initialising the libraries.
@@ -28,6 +29,7 @@ library(kernlab)
 library(neuralnet)
 library(class)
 library('Metrics')
+library(tidyverse)
 
 
 # Initialising the directory and using the data for pre-process
@@ -264,9 +266,6 @@ BC_Test_PredictionZ <-
 # The prop.chisq = FALSE removes the chi-square values that are not needed.
 # This gives us our TP. TN. FP. FN. Results
 CrossTable(x = BC_Test_LabelsZ, y = BC_Test_PredictionZ, prop.chisq = FALSE)
-
-# Dummy Plot
-plot(x = BC_Test_LabelsZ, y = BC_Test_PredictionZ)
 
 
 # ------------------------------------------------------------------------------
