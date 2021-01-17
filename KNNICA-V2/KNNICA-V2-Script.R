@@ -186,7 +186,7 @@ head(BreastCancer_Normalisation)
 
 # The following set.seed() function will help to reuse the same set of random variables.
 # It might be required further in the ICA to evaluate particular task again with same random varibales.
-set.seed(295)
+set.seed(350)
 
 # The sample function takes the normalised data that I created above where the class variable was taken off and it distributes into 70/30 proportion.
 BreastCancerKNN <-
@@ -219,45 +219,53 @@ NROW(BC_Train_Labels)
 # We are training the BC_Train data which was the 70% when I splitted.
 # We are testing the BC_Test data which was the 30% when I splitted.
 BC_Test_Prediction <- knn(train = BC_Train, test = BC_Test, cl = BC_Train_Labels, k = 21)
-BC_Test_Prediction2 <- knn(train = BC_Train, test = BC_Test, cl = BC_Train_Labels, k = 22)
 
 # This function is calculating the accuracy based on our prediction and labels.
 BC_Test_Prediction_Accuracy <- 100 * sum(BC_Test_Labels == BC_Test_Prediction) / NROW(BC_Test_Labels)
-# This function is calculating the accuracy based on our prediction and labels.
-BC_Test_Prediction_Accuracy2 <- 100 * sum(BC_Test_Labels == BC_Test_Prediction2) / NROW(BC_Test_Labels)
+
 
 # Displaying the accuracies that were created above.
 BC_Test_Prediction_Accuracy
-BC_Test_Prediction_Accuracy2
 
 # Similar to Confusion Matrix and CrossTable. It shows the TP, TN, FP, FN.
 table(BC_Test_Prediction , BC_Test_Labels)
 # The following line was used to get the overall accuracy for this model. It is a way to test that our previous function were working or not.
 Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction)
 
-# Similar to Confusion Matrix and CrossTable. It shows the TP, TN, FP, FN.
-table(BC_Test_Prediction2 , BC_Test_Labels)
-# The following line was used to get the overall accuracy for this model. It is a way to test that our previous function were working or not.
-Metrics::accuracy(BC_Test_Labels, BC_Test_Prediction2)
 
 # Using Confusion Matix now to display everything from accuracy to Kappa, Sensitivity...etc.
 confusionMatrix(table(BC_Test_Prediction , BC_Test_Labels))
-# Using Confusion Matix now to display everything from accuracy to Kappa, Sensitivity...etc.
-confusionMatrix(table(BC_Test_Prediction2 , BC_Test_Labels))
-
-# THE ONE WITH K=21 GIVES US BETTER RESULT.
 
 
+# Improve the performance of model.
+
+# This is the fastest way of checking whether our accuracy worked above is the best or not.
+# The following function will take a loop of K values from 1 to 35(IT CAN GO FURTHER)and it will check which one gives me the best accuracy rate for this dataset.
+# The tuning parameters are ‘k’ value and number of ’features/attributes selection.
+# Optimum ‘k’ value can be found using ‘elbow’ or ‘maximum % accuracy’ graph 
+# but ‘feature selection’ can be done only through understanding of features in kNN algorithm.
+# declaration to initiate for loop
 i = 1
 k.optm = 1
 
-for (i in 1:50) {
+for (i in 1:35) {
   knn.mod <- knn(train = BC_Train, test = BC_Test, cl = BC_Train_Labels,k = i)
   
   k.optm[i] <- 100 * sum(BC_Test_Labels == knn.mod) / NROW(BC_Test_Labels)
   k = i
-  cat(k, '=', k.optm[i], '')
+# to print the accuracy 
+  cat(k, '=', k.optm[i], '\n')
 }
+
+# to plot % accuracy that we created using the above function.
+# The lowest accuracy seems to be for K=1.
+# At k=7, maximum accuracy achieved which is 97.58%, after that, it seems to be stable for K7 to K26 but after it reduces success rate. 
+plot(k.optm, type="b", xlab="K- Value",ylab="Accuracy level")  
+
+
+
+
+
 
 
 
@@ -266,60 +274,95 @@ for (i in 1:50) {
 #-------------------------------------------------------------------------------
 #------------ IMPROVING MODEL PERFOMANCE BY USING 75% data for training---------
 
+# In this function I will try to normalise the numeric data.
+# The normalise function takes a vector X of values that are numeric, and for each value in X, it will subtract the
+# minimum value and then divide by the range of values in X.
+# At the end, the resulting vector is returned.
+normalise <- function (x) {return ((x - min(x)) / (max(x) - min(x)))}
 
 
-normalize <- function (x) {return ((x - min(x)) / (max(x) - min(x)))}
+# Testing if the normalise method above is working.
+# The data normalised in the second vector are larger than the first one
+# After normalisation, they both become equal.
+normalise(c(1, 2, 3, 4, 5))
+normalise(c(10, 20, 30, 40, 50))
 
-normalize(c(1, 2, 3, 4, 5))
-normalize(c(10, 20, 30, 40, 50))
+# I have stored the normalised data in the ‘normalise’ data frame
+# The ‘Patient_ID’ variable was not included because it is not required.
+# I also excluded the ‘Class’ variable as it is the variable I am trying to predict the accuracy for.
+NBreastCancer <- as.data.frame(lapply(BreastCancer[, 2:10], normalise))
 
-
-Normalised_BreastCancer <- as.data.frame(lapply(BreastCancer[, 2:10], normalize))
-
-head(Normalised_BreastCancer)
-
+# The following set.seed() function will help to reuse the same set of random variables.
+# It might be required further in the ICA to evaluate particular task again with same random varibales.
 set.seed(206)
 
-BreastCancer3 <- sample(1:nrow(Normalised_BreastCancer),
-                        size = nrow(Normalised_BreastCancer) * 0.75,
+# The sample function takes the normalised data that I created above where the class variable was taken off and it distributes into 70/30 proportion.
+BreastCancerNM <- sample(1:nrow(NBreastCancer),
+                        size = nrow(NBreastCancer) * 0.75,
                         replace = FALSE)
 
-BC_Train <- Normalised_BreastCancer[BreastCancer3, ]
-test_BC <- Normalised_BreastCancer[-BreastCancer3, ]
+# The BCTrainNM is using 70% of data specified above in the BreastCancerNM data we created.
+BCTrainNM <- NBreastCancer[BreastCancerNM, ]
+# The BC_Test is using the remaining data which should be 30% specified above in the BreastCancerNM data we created.
+BCTestNM <- NBreastCancer[-BreastCancerNM, ]
 
 
-train.BC_labels <- BreastCancer[BreastCancer3, 11]
-test.BC_labels <- BreastCancer[-BreastCancer3, 11]
+# When I create the training and test data, I excluded the target variable which is the CLASS variable.
+# The labels I am creating below are stored in a separate factor vectors.
+# 11 stands for the 11th variable which was the Class.
+# The training labels are training for the Class variable.
+BCTrainLabelsNM <- BreastCancer[BreastCancerNM, 11]
+# The testing labels are training for the Class variable.
+BCTestLabelsNM <- BreastCancer[-BreastCancerNM, 11]
+
+# Checking how many rows there are being trained
+NROW(BCTrainLabelsNM)
 
 
-NROW(train.BC_labels)
+# The KNN function is used to classify the data and it returns a factor vector of predicated labels.
+# I used 21 as it is the close to the square root of our training data but also used 22 to check differnt responses.
+# We are training the BCTrainNM data which was the 70% when I splitted.
+# We are testing the BCTestNM data which was the 30% when I splitted.
+BC_Test_Prediction <- knn(train = BCTrainNM, test = BCTestNM, cl = BCTrainLabelsNM, k = 21)
+
+# This function is calculating the accuracy based on our prediction and labels.
+BC_Test_Prediction_Accuracy <- 100 * sum(BCTestLabelsNM == BC_Test_Prediction) / NROW(BCTestLabelsNM)
 
 
-BC_Test_Prediction <- knn(train = BC_Train, test = test_BC, cl = train.BC_labels, k = 21)
-BC_Test_Prediction2 <- knn(train = BC_Train, test = test_BC, cl = train.BC_labels, k = 22)
-
-BC_Test_Prediction_Accuracy <- 100 * sum(test.BC_labels == BC_Test_Prediction) / NROW(test.BC_labels)
-BC_Test_Prediction_Accuracy2 <- 100 * sum(test.BC_labels == BC_Test_Prediction2) / NROW(test.BC_labels)
-
-
+# Displaying the accuracies that were created above.
 BC_Test_Prediction_Accuracy
-BC_Test_Prediction_Accuracy2
 
-table(BC_Test_Prediction , test.BC_labels)
-Metrics::accuracy(test.BC_labels, BC_Test_Prediction)
+# Similar to Confusion Matrix and CrossTable. It shows the TP, TN, FP, FN.
+table(BC_Test_Prediction , BCTestLabelsNM)
+# The following line was used to get the overall accuracy for this model. It is a way to test that our previous function were working or not.
+Metrics::accuracy(BCTestLabelsNM, BC_Test_Prediction)
 
-table(BC_Test_Prediction2 , test.BC_labels)
-Metrics::accuracy(test.BC_labels, BC_Test_Prediction2)
 
-confusionMatrix(table(BC_Test_Prediction , test.BC_labels))
+# Using Confusion Matix now to display everything from accuracy to Kappa, Sensitivity...etc.
+confusionMatrix(table(BC_Test_Prediction , BCTestLabelsNM))
 
-i = 1
-k.optm = 1
 
-for (i in 1:50) {
-  knn.mod <- knn(train = BC_Train, test = test_BC, cl = train.BC_labels,k = i)
+
+# Improve the performance of model.
+# This is the fastest way of checking whether our accuracy worked above is the best or not.
+# The following function will take a loop of K values from 1 to 35(IT CAN GO FURTHER)and it will check which one gives me the best accuracy rate for this dataset.
+# The tuning parameters are ‘k’ value and number of ’features/attributes selection.
+# Optimum ‘k’ value can be found using ‘elbow’ or ‘maximum % accuracy’ graph 
+# but ‘feature selection’ can be done only through understanding of features in kNN algorithm.
+# declaration to initiate for loop
+i2 = 1
+k.optm2 = 1
+
+for (i in 1:35) {
+  knn.mod2 <- knn(train = BCTrainNM, test = BCTestNM, cl = BCTrainLabelsNM,k = i)
   
-  k.optm[i] <- 100 * sum(test.BC_labels == knn.mod) / NROW(test.BC_labels)
+  k.optm2[i] <- 100 * sum(BCTestLabelsNM == knn.mod2) / NROW(BCTestLabelsNM)
   k = i
-  cat(k, '=', k.optm[i], '')
+# to print the accuracy 
+  cat(k, '=', k.optm2[i], '\n')
 }
+
+# to plot % accuracy that we created using the above function.
+# The lowest accuracy seems to be for K=2,3 and 4.
+# At k=12, maximum accuracy achieved which is 98.84%, after that, it seems to be stable until the last of tested Ks. 
+plot(k.optm2, type="b", xlab="K- Value",ylab="Accuracy level")  
