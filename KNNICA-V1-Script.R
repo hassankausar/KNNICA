@@ -34,7 +34,7 @@ library(tidyverse)
 
 # Initialising the directory and using the data for pre-process
 # WORKING WITH THIS DATA FROM HOME
-setwd("C:/Users/Hassan/Desktop/ICA WORK SUBMISSION/Hassan Akhtar Kausar - V8039087/Part 1 - Video, Application/KNNICA-Model/KNNICA")
+setwd("C:/Users/Hassan/Desktop/ICA WORK SUBMISSION/Hassan Akhtar Kausar - V8039087/Part 1 - Video, Application/KNNICA/KNNICA")
 
 #setwd("C/:Users/V8039087/Desktop/MACHINE LEARNING FULL ICA WORK/KNNICA-master/KNNICA-master")
 
